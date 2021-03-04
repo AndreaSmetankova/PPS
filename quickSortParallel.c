@@ -21,6 +21,9 @@ struct arguments{
 
 int step = 1;
 pthread_mutex_t mutex;
+int median1,median2;
+
+
 void printArray(int array[],int size);
 struct arrays divideArray(int* array, int size);
 int partition (int left, int right, int array[]);
@@ -36,35 +39,41 @@ int main(int argc, const char* argv[]) {
     pthread_t thread_id0,thread_id1,thread_id2,thread_id3;
     struct arrays divided_array = divideArray(array,size);
     struct arguments arg0,arg1,arg2,arg3;
-    
+    pthread_mutex_init(&mutex, NULL);
 
     arg0.array = array;
     arg0.start = divided_array.p0_start;
-    arg0.end = divided_array.p0_start + divided_array.part_size;
+    arg0.end = divided_array.p0_start + divided_array.part_size - 1;
     arg0.proces_id = 0;
 
     arg1.array = array;
     arg1.start = divided_array.p1_start;
-    arg1.end = divided_array.p1_start + divided_array.part_size;
+    arg1.end = divided_array.p1_start + divided_array.part_size - 1;
     arg1.proces_id = 1;
 
     arg2.array = array;
     arg2.start = divided_array.p2_start;
-    arg2.end = divided_array.p2_start + divided_array.part_size;
+    arg2.end = divided_array.p2_start + divided_array.part_size - 1;
     arg2.proces_id = 2;
 
     arg3.array = array;
     arg3.start = divided_array.p3_start;
-    arg3.end = divided_array.p3_start + divided_array.part_size;
+    arg3.end = divided_array.p3_start + divided_array.part_size - 1;
     arg3.proces_id = 3;
 
+    printf("Unsorted array: ");
+    printArray(array,size);
+    printf("\n");
 
     for(int i = 0; i < 2; i++)
     {
         pthread_create(&thread_id0,NULL,(void*)sortArray, (void*)&arg0);
-        pthread_create(&thread_id1,NULL,(void*)sortArray, (void*)&arg1);
+        sleep(1);
         pthread_create(&thread_id2,NULL,(void*)sortArray, (void*)&arg2);
+        sleep(2);
+        pthread_create(&thread_id1,NULL,(void*)sortArray, (void*)&arg1);
         pthread_create(&thread_id3,NULL,(void*)sortArray, (void*)&arg3);
+       
         pthread_join(thread_id0,NULL);
         pthread_join(thread_id1,NULL);
         pthread_join(thread_id2,NULL);
@@ -73,22 +82,6 @@ int main(int argc, const char* argv[]) {
         step++;
         
     }
-    
-
-    printf("Unsorted array: ");
-    printArray(array,size);
-    printf("\n"); 
-   
-   
-    // printf("Sorted array: ");
-    // // printArray(array,size);
-    // printf("first part of the array:");
-    // printArray(array,8);
-    // printf("\n");
-    // quicksort(divided_array.p0_start,divided_array.part_size,array);
-    // printf("first part of the array sorted:");
-    // printArray(array,8);
-    // printf("\n");
 
 
     printf("whole array:");
@@ -101,28 +94,48 @@ int main(int argc, const char* argv[]) {
     return 0;
 
 }
+/*TODO: divide partial arrays acording to median and exchange between threads for both first and second step*/
 
 void sortArray(void * arguments){
     struct arguments *args = (struct arguments *) arguments;
     quicksort(args->start, args->end, args->array);
-    
+    printf("proces_id = %i\n", args->proces_id);
     if (step == 1)
     {
         if(args->proces_id == 0)
         {
-           printf("1. proces 0 and expected step 1 acctual step %i \n", step);  
+        //    pthread_mutex_lock(&mutex);
+           printf("1. proces 0 and expected step 1 acctual step %i \n", step); 
+           median1 = args->start + ((args->end - args->start)/2);
+           printArray(args->array,8);
+           printf("\n median = %i value = %i\n", median1, args->array[median1]);
+        //    pthread_mutex_unlock(&mutex);
         } else
         {
+            // pthread_mutex_lock(&mutex);
+            printf("median 1 = %i\n", median1);
             printf("2. proces %i and expected step 1 acctual step %i\n",args->proces_id, step);
+            // pthread_mutex_unlock(&mutex);
         }
     }else if(step == 2)
     {
         if(args->proces_id == 0 || args->proces_id == 2)
         {
+            //not so good solution
+            // pthread_mutex_lock(&mutex);
+            if(args->proces_id == 0)
+            {
+                median1 = args->start + ((args->end - args->start)/2);
+            }else{
+                median2 = args->start + ((args->end - args->start)/2);
+            }
             printf("3. proces %i and expected step 2 acctual step %i\n", args->proces_id, step);
+            // pthread_mutex_unlock(&mutex);
         }else
         {
+            // pthread_mutex_lock(&mutex);
             printf("4. proces %i and expected step 2 acctual step %i\n", args->proces_id, step);
+            // pthread_mutex_unlock(&mutex);
         }
     }
 }
