@@ -19,17 +19,25 @@ struct arguments{
     int proces_id;
 };
 
+struct median_division{
+    int lower_start;
+    int lower_end;
+    int higher_start;
+    int higher_end;
+};
+
 int step = 1;
 pthread_mutex_t mutex;
 int median1,median2;
 
 
-void printArray(int array[],int size);
+void printArray(int array[], int start, int size);
 struct arrays divideArray(int* array, int size);
 int partition (int left, int right, int array[]);
 void quicksort (int left, int right, int array[]);
 void swap(int* a, int* b);
 void sortArray(void* arguments);
+struct median_division medianDivision (int* array, int start, int end, int median);
 
 
 int main(int argc, const char* argv[]) {
@@ -43,34 +51,35 @@ int main(int argc, const char* argv[]) {
 
     arg0.array = array;
     arg0.start = divided_array.p0_start;
-    arg0.end = divided_array.p0_start + divided_array.part_size - 1;
+    arg0.end = divided_array.p0_start + divided_array.part_size ;
     arg0.proces_id = 0;
 
     arg1.array = array;
     arg1.start = divided_array.p1_start;
-    arg1.end = divided_array.p1_start + divided_array.part_size - 1;
+    arg1.end = divided_array.p1_start + divided_array.part_size;
     arg1.proces_id = 1;
 
     arg2.array = array;
     arg2.start = divided_array.p2_start;
-    arg2.end = divided_array.p2_start + divided_array.part_size - 1;
+    arg2.end = divided_array.p2_start + divided_array.part_size ;
     arg2.proces_id = 2;
 
     arg3.array = array;
     arg3.start = divided_array.p3_start;
-    arg3.end = divided_array.p3_start + divided_array.part_size - 1;
+    arg3.end = divided_array.p3_start + divided_array.part_size ;
     arg3.proces_id = 3;
 
     printf("Unsorted array: ");
-    printArray(array,size);
+    printArray(array,0,size);
     printf("\n");
+
 
     for(int i = 0; i < 2; i++)
     {
         pthread_create(&thread_id0,NULL,(void*)sortArray, (void*)&arg0);
         sleep(1);
         pthread_create(&thread_id2,NULL,(void*)sortArray, (void*)&arg2);
-        sleep(2);
+        sleep(1);
         pthread_create(&thread_id1,NULL,(void*)sortArray, (void*)&arg1);
         pthread_create(&thread_id3,NULL,(void*)sortArray, (void*)&arg3);
        
@@ -82,15 +91,7 @@ int main(int argc, const char* argv[]) {
         step++;
         
     }
-
-
-    printf("whole array:");
-    printArray(array,size);
-    printf("\n");
-    printf("\n");
-
-
-
+     
     return 0;
 
 }
@@ -107,14 +108,28 @@ void sortArray(void * arguments){
         //    pthread_mutex_lock(&mutex);
            printf("1. proces 0 and expected step 1 acctual step %i \n", step); 
            median1 = args->start + ((args->end - args->start)/2);
-           printArray(args->array,8);
+           printArray(args->array,args->start, args->end);
            printf("\n median = %i value = %i\n", median1, args->array[median1]);
         //    pthread_mutex_unlock(&mutex);
         } else
         {
             // pthread_mutex_lock(&mutex);
-            printf("median 1 = %i\n", median1);
-            printf("2. proces %i and expected step 1 acctual step %i\n",args->proces_id, step);
+            
+            struct median_division d_array = medianDivision (args->array, args->start, args->end, args->array[median1]);
+            printf("divided array on median %i\n", median1);
+            printf("lower: ");
+            for (int i =d_array.lower_start; i < (d_array.lower_end +1); i++)
+            {
+                printf("%i ", args->array[i]);
+            }
+            printf("\n");
+            printf("higher: ");
+            for (int i =d_array.higher_start; i < (d_array.higher_end +1); i++)
+            {
+                printf("%i ", args->array[i]);
+            }
+            printf("\n");
+            // printf("2. proces %i and expected step 1 acctual step %i\n",args->proces_id, step);
             // pthread_mutex_unlock(&mutex);
         }
     }else if(step == 2)
@@ -129,15 +144,44 @@ void sortArray(void * arguments){
             }else{
                 median2 = args->start + ((args->end - args->start)/2);
             }
-            printf("3. proces %i and expected step 2 acctual step %i\n", args->proces_id, step);
+            // printf("3. proces %i and expected step 2 acctual step %i\n", args->proces_id, step);
             // pthread_mutex_unlock(&mutex);
         }else
         {
             // pthread_mutex_lock(&mutex);
-            printf("4. proces %i and expected step 2 acctual step %i\n", args->proces_id, step);
+            // printf("4. proces %i and expected step 2 acctual step %i\n", args->proces_id, step);
             // pthread_mutex_unlock(&mutex);
         }
     }
+}
+
+struct median_division medianDivision (int* array, int start, int end, int median){
+    struct median_division result;
+    printf("median = %i\n",median);
+    if(array[start] <= median)
+    {
+        result.lower_start = start;
+    } else {
+        result.lower_start = -1;
+        result.lower_end = -1;
+        result.higher_start = start;
+        result.higher_end = end -1;
+
+        return result;
+    }
+
+    for(int i = start; i < end; i++)
+    {
+        if (array[i] > median)
+        {
+            result.higher_start = i;
+            result.higher_end = end -1;
+            result.lower_end = i - 1;
+            return result;
+        }
+    }
+   
+    return result;
 }
 
 void quicksort (int left, int right, int array[]){
@@ -186,8 +230,8 @@ struct arrays divideArray(int* array, int size){
 
 
 
-void printArray(int array[],int size){
-    for(int i = 0; i < size; i++)
+void printArray(int array[], int start, int size){
+    for(int i = start; i < size; i++)
     {
         printf("%d",array[i]);
         printf(" ");
