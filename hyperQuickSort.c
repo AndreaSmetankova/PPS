@@ -2,69 +2,29 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include "quickSort.h"
+#include "hyperQuickSort.h"
 
-#define MAXSIZE 1000
-
-struct arrays {
-    int p0_array[MAXSIZE];
-    int p0_size;
-    int p1_array[MAXSIZE];
-    int p1_size;
-    int p2_array[MAXSIZE];
-    int p2_size;
-    int p3_array[MAXSIZE];
-    int p3_size;
-};
-
-struct median_division {
-    int lower_part[MAXSIZE];
-    int lower_size;
-    int higher_part[MAXSIZE];
-    int higher_size;
-};
-
-struct arguments{
-    int* array;
-    int size;;
-    int proces_id;
-};
-struct changable_parts{
-    struct median_division p0;
-    struct median_division p1;
-    struct median_division p2;
-    struct median_division p3;
-};
-void printArray(int array[], int size);
-int partition (int left, int right, int array[]);
-void quicksort (int left, int right, int array[]);
-void swap(int* a, int* b);
-struct arrays divideArray(int* array, int size);
-int copyArray(int* source_array, int* destination_array, int size, int start);
-struct median_division medianDivision (int* array, int size, int median);
-void hyperQuickSort(void* arguments);
-void switchParts (int proces_id);
-void mergeArrays();
-void printParts();
-
-
-
-int step = 1;
+int step;
 int median1,median2;
 struct changable_parts parts;
 pthread_mutex_t lock;
 pthread_cond_t cond;
-unsigned int ready = 0;
-unsigned int ready2 = 0;
+unsigned int ready;
+unsigned int ready2;
 struct arguments arg0,arg1,arg2,arg3;
 unsigned int done;
+struct arrays proces_arrays;
 
-int main(int argc, const char* argv[]) {
-    
-    int array[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
-    int size = sizeof(array) / sizeof(array[0]);
-    struct arrays proces_arrays = divideArray(array, size);
+
+void parallelQuickSort(int* array, int size){
+    proces_arrays = divideArray(array, size);
+    step = 1;
+    ready = 0;
+    ready2 = 0;
     pthread_t thread_id0,thread_id1,thread_id2,thread_id3;
     
+    //spravit funkciu
     arg0.array = proces_arrays.p0_array;
     arg0.size = proces_arrays.p0_size;
     arg0.proces_id = 0;
@@ -124,6 +84,8 @@ int main(int argc, const char* argv[]) {
     printArray(arg3.array, arg3.size);
     printf("\n"); 
 
+
+    //spravit funkciu
     int final_size = arg0.size + arg1.size + arg2.size + arg3.size;
     int result[final_size];
     int i = 0;
@@ -158,11 +120,7 @@ int main(int argc, const char* argv[]) {
     printf("final: ");
     printArray(result,final_size);
     printf("\n");
-    
-
-    return 0;
 }
-
 
 void hyperQuickSort(void* arguments){
     struct arguments *args = (struct arguments *) arguments;
@@ -435,6 +393,7 @@ void printParts(){
 }
 
 void switchParts (int proces_id){
+    // prepisat na pracovanie s pointermi
    if(step == 1)
    {
        if(proces_id == 2)
@@ -547,45 +506,4 @@ int copyArray(int* source_array, int* destination_array, int size, int start){
     }
     
     return j ;
-}
-
-void printArray(int array[], int size){
-    for(int i = 0; i < size; i++)
-    {
-        printf("%d",array[i]);
-        printf(" ");
-    }
-}
-
-void quicksort (int left, int right, int array[]){
-
-
-    if (left < right)
-    {
-        int p = partition(left, right, array);
-        quicksort(left, p -1, array);
-        quicksort(p + 1, right, array);
-    }
-}
-
-int partition (int left, int right, int array[]) {
-    int pivot = array[right];
-    int i = left - 1;
-
-    for (int j = left; j <= right -1; j++)
-    {
-        if(array[j] < pivot)
-        {
-            i++;
-            swap(&array[i], &array[j]);
-        }
-    }
-    swap(&array[i + 1],&array[right]);
-    return (i + 1);
-}
-
-void swap(int* a, int* b){
-    int temp = *a;
-    *a = *b;
-    *b = temp;
 }

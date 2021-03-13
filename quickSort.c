@@ -1,31 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "quickSort.h"
 
 
-int partition (int left, int right, int array[]);
-void quicksort (int left, int right, int array[]);
-void swap(int* a, int* b);
-void printArray(int array[],int size);
-
-
-int main(int argc, const char* argv[]) {
-
-    int array[] = {11,22,3,4,66,77,865,987, 43, 1, -3};
-    int size = sizeof(array) / sizeof(array[0]);
-    printf("Unsorted array: ");
-    printArray(array,size);
-    printf("\n"); 
-    quicksort(0,size -1, array);
-    printf("Sorted array: ");
-    printArray(array,size);
-    printf("\n");
-
-
-
-    return 0;
-
-}
 
 void quicksort (int left, int right, int array[]){
 
