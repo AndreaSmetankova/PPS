@@ -58,6 +58,7 @@ struct changable_parts parts;
 struct arguments arg;
 
 int main(int argc, const char* argv[]) {
+    //TODO: citanie pola s file
     int array[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
     int size = sizeof(array) / sizeof(array[0]);
 
@@ -232,7 +233,7 @@ void hyperQuickSort(void* arguments){
 }
 
 void switchParts(struct arguments* args, int * array, int size){
-
+//TODO: sparvit tak aby sa to vzkonavalo paralelne
     if(step == 1)
     {   
         //new p0 array
@@ -293,6 +294,7 @@ void switchParts(struct arguments* args, int * array, int size){
             i++;
         }
 
+        //funkcia
         int start = 0;
         for(start; start < args->p0.size; start++)
         {

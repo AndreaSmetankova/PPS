@@ -5,456 +5,321 @@
 #include "quickSort.h"
 #include "hyperQuickSort.h"
 
-int step;
-int median1,median2;
-struct changable_parts parts;
 pthread_mutex_t lock;
 pthread_cond_t cond;
-unsigned int ready;
-unsigned int ready2;
-struct arguments arg0,arg1,arg2,arg3;
+int step = 1;
 unsigned int done;
-struct arrays proces_arrays;
-
+int median1,median2;
+unsigned int ready = 0;
+unsigned int ready2 = 0;
+struct changable_parts parts;
+struct arguments arg;
 
 void parallelQuickSort(int* array, int size){
-    proces_arrays = divideArray(array, size);
-    step = 1;
-    ready = 0;
-    ready2 = 0;
     pthread_t thread_id0,thread_id1,thread_id2,thread_id3;
+    pthread_cond_init(&cond, NULL);
     
-    //spravit funkciu
-    arg0.array = proces_arrays.p0_array;
-    arg0.size = proces_arrays.p0_size;
-    arg0.proces_id = 0;
+    arg = divideArray(array, size);
 
-    arg1.array = proces_arrays.p1_array;
-    arg1.size = proces_arrays.p1_size;
-    arg1.proces_id = 1;
-
-    arg2.array = proces_arrays.p2_array;
-    arg2.size = proces_arrays.p2_size;
-    arg2.proces_id = 2;
-
-    arg3.array = proces_arrays.p3_array;
-    arg3.size = proces_arrays.p3_size;
-    arg3.proces_id = 3;
-
-    printf("Unsorted array: ");
-    printArray(array,size);
-    printf("\n");
-
-    for(int i = 0; i < 2; i++)
+     for(int i = 0; i < 2; i++)
     {
         done = 0;
-        pthread_cond_init(&cond, NULL);
-        pthread_create(&thread_id0,NULL,(void*)hyperQuickSort, (void*)&arg0);
+        
+        pthread_create(&thread_id0,NULL,(void*)hyperQuickSort, (void*)&arg.p0);
         sleep(1);
-        pthread_create(&thread_id2,NULL,(void*)hyperQuickSort, (void*)&arg2);
-        sleep(1);
-        pthread_create(&thread_id1,NULL,(void*)hyperQuickSort, (void*)&arg1);
-        sleep(1);
-        pthread_create(&thread_id3,NULL,(void*)hyperQuickSort, (void*)&arg3);
+        pthread_create(&thread_id1,NULL,(void*)hyperQuickSort, (void*)&arg.p1);
+        pthread_create(&thread_id2,NULL,(void*)hyperQuickSort, (void*)&arg.p2);
+        pthread_create(&thread_id3,NULL,(void*)hyperQuickSort, (void*)&arg.p3);
+        
         
 
         pthread_join(thread_id0,NULL);
         pthread_join(thread_id1,NULL);
         pthread_join(thread_id2,NULL);
         pthread_join(thread_id3,NULL);
-        printf("After threads %i\n", i + 1); 
+        
+        switchParts(&arg, array, size);
 
         step++;
         
     }
+
     
-    printf("array p0: ");
-    printArray(arg0.array, arg0.size);
-    printf("\n"); 
-    
-    printf("array p1: ");
-    printArray(arg1.array, arg1.size);
-    printf("\n"); 
 
-    printf("array p2: ");
-    printArray(arg2.array, arg3.size);
-    printf("\n"); 
-    
-    printf("array p3: ");
-    printArray(arg3.array, arg3.size);
-    printf("\n"); 
-
-
-    //spravit funkciu
-    int final_size = arg0.size + arg1.size + arg2.size + arg3.size;
-    int result[final_size];
-    int i = 0;
-    int j = 0;
-
-    while( i < arg0.size)
-    {
-        result[i] = arg0.array[i];
-        i++;
-    }
-    while (j < arg1.size)
-    {
-        result[i] = arg1.array[j];
-        i++;
-        j++;
-    }
-    j = 0;
-    while (j < arg2.size)
-    {
-        result[i] = arg2.array[j];
-        i++;
-        j++;
-    }
-    j = 0;
-    while (j < arg3.size)
-    {
-        result[i] = arg3.array[j];
-        i++;
-        j++;
-    }
-
-    printf("final: ");
-    printArray(result,final_size);
-    printf("\n");
 }
 
 void hyperQuickSort(void* arguments){
-    struct arguments *args = (struct arguments *) arguments;
+    struct proces* args = (struct proces *) arguments;
     quicksort(0, args->size - 1, args->array);
-    printf("proces_id = %i\n", args->proces_id);
-    if (step == 1)
+    if(step == 1)
     {
-        if(args->proces_id == 0)
-        {
-            pthread_mutex_lock(&lock);
-            median1 =args->array[(args->size - 1)/2];
-            parts.p0 = medianDivision (args->array, args->size, median1);
-            ready = 1;
-            printf("ready\n");
-            pthread_cond_broadcast(&cond);
-            done++;
-            pthread_mutex_unlock(&lock);
-
-        } else
-        {
-            
-           switch (args->proces_id)
-           {
-           case 1:
-               pthread_mutex_lock(&lock);
-               while(ready != 1)
-               {
-                   printf("waiting 1 ...\n");
-                   pthread_cond_wait(&cond, &lock);
-               }
-               printf("done 1\n");
-               parts.p1 = medianDivision (args->array, args->size, median1);
-               done++;
-               pthread_mutex_unlock(&lock);
-               break;
-           case 2:
-               pthread_mutex_lock(&lock);
-               while(ready != 1)
-               {
-                   printf("waiting 2...\n");
-                   pthread_cond_wait(&cond, &lock);
-               }
-               printf("done 2\n");
-               parts.p2 = medianDivision (args->array, args->size, median1);
-               switchParts(args->proces_id);
-               done++;
-               pthread_mutex_unlock(&lock);
-               break;
-           case 3:
-               pthread_mutex_lock(&lock);
-               while(ready != 1)
-               {
-                   printf("waiting 3...\n");
-                   pthread_cond_wait(&cond, &lock);
-               }
-               printf("done 3\n");
-               parts.p3 = medianDivision (args->array, args->size, median1);
-               switchParts(args->proces_id);
-               done++;
-               pthread_mutex_unlock(&lock);
-               break;
-           
-           default:
-               break;
-           }
-           
-            
-        }
-        
-
-    }else if(step == 2)
-    {
-        
-        switch (args->proces_id)
+        switch(args->proces_id)
         {
         case 0:
             pthread_mutex_lock(&lock);
             median1 =args->array[(args->size - 1)/2];
             parts.p0 = medianDivision (args->array, args->size, median1);
-            ready = 2;
-            printf("ready\n");
+            ready = 1;
             pthread_cond_broadcast(&cond);
-            done++;
             pthread_mutex_unlock(&lock);
             break;
         case 1:
             pthread_mutex_lock(&lock);
-               while(ready != 2)
-               {
-                   printf("waiting 1 ...\n");
-                   pthread_cond_wait(&cond, &lock);
-               }
-               printf("done 1\n");
-               parts.p1 = medianDivision (args->array, args->size, median1);
-               switchParts(args->proces_id);
-               done++;
-               pthread_mutex_unlock(&lock);
-               break;
+            while (ready != 1)
+            {
+               pthread_cond_wait(&cond, &lock);
+            }
+            parts.p1 = medianDivision (args->array, args->size, median1);
+            pthread_mutex_unlock(&lock);
+            
+            break;
         case 2:
             pthread_mutex_lock(&lock);
-            median2 =args->array[(args->size - 1)/2];
-            parts.p2 = medianDivision (args->array, args->size, median2);
-            ready2 = 3;
-            printf("ready\n");
-            pthread_cond_broadcast(&cond);
-            done++;
+            while (ready != 1)
+            {
+               pthread_cond_wait(&cond, &lock);
+            }
+            parts.p2 = medianDivision (args->array, args->size, median1);
             pthread_mutex_unlock(&lock);
             break;
         case 3:
             pthread_mutex_lock(&lock);
-               while(ready2 != 3)
-               {
-                   printf("waiting 3 ...\n");
-                   pthread_cond_wait(&cond, &lock);
-               }
-               printf("done 1\n");
-               parts.p3 = medianDivision (args->array, args->size, median2);
-               switchParts(args->proces_id);
-               done++;
-               pthread_mutex_unlock(&lock);
-               break;
+            while (ready != 1)
+            {
+               pthread_cond_wait(&cond, &lock);
+            }
+            parts.p3 = medianDivision (args->array, args->size, median1);
+            pthread_mutex_unlock(&lock);
+            
+       
         default:
             break;
+
         }
-    }
-    if(done == 4)
+
+    } else
     {
-        printf("done = %i\n", done);
-        mergeArrays();
+        switch(args->proces_id)
+        {
+        case 0:
+            pthread_mutex_lock(&lock);
+            median1 =args->array[(args->size - 1)/2];
+            parts.p0 = medianDivision (args->array, args->size, median1);
+            ready = 1;
+            pthread_cond_broadcast(&cond);
+            pthread_mutex_unlock(&lock);
+            break;
+            
+        case 1:
+            pthread_mutex_lock(&lock);
+            while (ready != 1)
+            {
+               pthread_cond_wait(&cond, &lock);
+            }
+            parts.p1 = medianDivision (args->array, args->size, median1);
+            pthread_mutex_unlock(&lock);
+            break;
+        case 2:
+            pthread_mutex_lock(&lock);
+            median2 =args->array[(args->size - 1)/2];
+            ready2 = 1;
+            parts.p2 = medianDivision (args->array, args->size, median2);
+            pthread_cond_broadcast(&cond);
+            pthread_mutex_unlock(&lock);
+            break;
+        case 3:
+            pthread_mutex_lock(&lock);
+            while (ready2 != 1)
+            {
+               pthread_cond_wait(&cond, &lock);
+            }
+            parts.p3 = medianDivision (args->array, args->size, median2);
+            pthread_mutex_unlock(&lock);
+            break;
+        default:
+            break;
+
+        }
     }
     
     
 }
 
-void mergeArrays(){
-    int merged_size;
-    int result[MAXSIZE];
-    int i;
-    printf("merging step = %i....\n", step);
-    
-        printf("\n");
-        merged_size =  parts.p0.lower_size + parts.p0.higher_size;
-        printf("merged size = %i\n", merged_size);
-        i = 0;
-        while( i < parts.p0.lower_size )
+void switchParts(struct arguments* args, int * array, int size){
+//TODO: sparvit tak aby sa to vzkonavalo paralelne
+    if(step == 1)
+    {   
+        //new p0 array
+        args->p0.size = parts.p0.lower_size + parts.p2.lower_size;
+        int tmp0[args->p0.size];
+        int i = 0;
+        for ( i; i < parts.p0.lower_size; i++)
         {
-            result[i] = parts.p0.lower_part[i];
+            tmp0[i] = parts.p0.lower_part[i];
+        }
+        for (int j = 0; j < parts.p2.lower_size; j++)
+        {
+            tmp0[i] = parts.p2.lower_part[j];
             i++;
         }
-        for(int j = 0; j <  parts.p0.higher_size; j++ )
-        {
-            result[i] = parts.p0.higher_part[j];
-            i++;
-        }
-        
-        copyArray(result,arg0.array,merged_size,0);
-        arg0.size = merged_size;
-        quicksort(0,arg0.size -1, arg0.array);
+        args->p0.array = &array[0];
 
-    
-        printArray(result, merged_size);
-        printf("\n");
-        printArray(arg0.array, arg0.size);
-        printf("\n\n");
-        
-        
-    
-        merged_size =  parts.p1.lower_size + parts.p1.higher_size;
-        i = 0;
-        for(i; i < parts.p1.lower_size ; i++)
+        //new p1 array
+        args->p1.array = &array[args->p0.size];
+        args->p1.size = parts.p1.lower_size + parts.p3.lower_size;
+        int tmp1[args->p1.size];
+        for ( i = 0; i < parts.p1.lower_size ; i++)
         {
-            result[i] = parts.p1.lower_part[i];
+            tmp1[i] = parts.p1.lower_part[i];
         }
-        for(int j = 0; j <  parts.p1.higher_size; j++ )
+        for (int j = 0; j < parts.p3.lower_size; j++)
         {
-            result[i] = parts.p1.higher_part[j];
+            tmp1[i] = parts.p3.lower_part[j];
             i++;
         }
-        
-        printArray(result, merged_size);
-        printf("\n");
-        copyArray(result,arg1.array,merged_size,0);
-        arg1.size = merged_size;
-        quicksort(0,arg1.size -1, arg1.array);
-        
-        
-   
-        merged_size =  parts.p2.lower_size + parts.p2.higher_size;
-        i = 0;
-        for(i; i < parts.p2.lower_size ; i++)
+
+        //new p2 array
+        args->p2.array = &array[args->p1.size + args->p0.size];
+        args->p2.size = parts.p2.higher_size + parts.p0.higher_size;
+        int tmp2[args->p2.size];
+        for ( i = 0; i < parts.p2.higher_size ; i++)
         {
-            result[i] = parts.p2.lower_part[i];
+            tmp2[i] = parts.p2.higher_part[i];
         }
-        for(int j = 0; j <  parts.p2.higher_size; j++ )
+        for (int j = 0; j < parts.p0.higher_size; j++)
         {
-            result[i] = parts.p2.higher_part[j];
+            tmp2[i] = parts.p0.higher_part[j];
+            i++;
+        } 
+ 
+        //new p3 array
+        args->p3.array = &array[args->p2.size + args->p1.size + args->p0.size];
+        args->p3.size = parts.p3.higher_size + parts.p1.higher_size;
+        int tmp3[args->p3.size];
+        for ( i = 0; i < parts.p3.higher_size ; i++)
+        {
+            tmp3[i] = parts.p3.higher_part[i];
+        }
+
+        for (int j = 0; j < parts.p1.higher_size; j++)
+        {
+            tmp3[i] = parts.p1.higher_part[j];
             i++;
         }
+
+        //funkcia
+        int start = 0;
+        for(start; start < args->p0.size; start++)
+        {
+            array[start] = tmp0[start];
+        }
+
+        for(int i = 0; i < args->p1.size; i++)
+        {
+            array[start] = tmp1[i];
+            start++;
+        }
+        for(int i = 0; i < args->p2.size; i++)
+        {
+            array[start] = tmp2[i];
+            start++;
+        }
+        for(int i = 0; i < args->p3.size; i++)
+        {
+            array[start] = tmp3[i];
+            start++;
+        }
+       
+    } else 
+    {
+        //new p0 array
+        args->p0.size = parts.p0.lower_size + parts.p1.lower_size;
+        int tmp0[args->p0.size];
+        int i = 0;
+        for ( i; i < parts.p0.lower_size; i++)
+        {
+            tmp0[i] = parts.p0.lower_part[i];
+        }
+        for (int j = 0; j < parts.p1.lower_size; j++)
+        {
+            tmp0[i] = parts.p1.lower_part[j];
+            i++;
+        }
+        quicksort(0,args->p0.size - 1, tmp0);
+        args->p0.array = &array[0];
         
-        copyArray(result,arg2.array,merged_size,0);
-        printf("\n");
-        arg2.size = merged_size;
-        quicksort(0,arg2.size -1, arg2.array);
+        //new p1 array
+        args->p1.array = &array[args->p0.size];
+        args->p1.size = parts.p1.higher_size + parts.p0.higher_size;
+        int tmp1[args->p1.size];
+        for ( i = 0; i < parts.p1.higher_size ; i++)
+        {
+            tmp1[i] = parts.p1.higher_part[i];
+        }
+        for (int j = 0; j < parts.p0.higher_size; j++)
+        {
+            tmp1[i] = parts.p0.higher_part[j];
+            i++;
+        }
+        quicksort(0,args->p1.size - 1, tmp1); 
+
+        //new p2 array
+        args->p2.array = &array[args->p1.size + args->p0.size];
+        args->p2.size = parts.p2.lower_size + parts.p3.lower_size;
+        int tmp2[args->p2.size];
+        for ( i = 0; i < parts.p2.lower_size ; i++)
+        {
+            tmp2[i] = parts.p2.lower_part[i];
+        }
+        for (int j = 0; j < parts.p3.lower_size; j++)
+        {
+            tmp2[i] = parts.p3.lower_part[j];
+            i++;
+        } 
+        quicksort(0,args->p2.size - 1, tmp2);  
+
+        //new p3 array;
+        args->p3.array = &array[args->p2.size + args->p1.size + args->p0.size];
+        args->p3.size = parts.p3.higher_size + parts.p2.higher_size;
+        int tmp3[args->p3.size];
+        for ( i = 0; i < parts.p3.higher_size ; i++)
+        {
+            tmp3[i] = parts.p3.higher_part[i];
+        }
+
+        for (int j = 0; j < parts.p2.higher_size; j++)
+        {
+            tmp3[i] = parts.p2.higher_part[j];
+            i++;
+        }
+        quicksort(0,args->p3.size - 1, tmp3);
+        
+
+        int start = 0;
+        for(start; start < args->p0.size; start++)
+        {
+            array[start] = tmp0[start];
+        }
+
+        for(int i = 0; i < args->p1.size; i++)
+        {
+            array[start] = tmp1[i];
+            start++;
+        }
+        for(int i = 0; i < args->p2.size; i++)
+        {
+            array[start] = tmp2[i];
+            start++;
+        }
+        for(int i = 0; i < args->p3.size; i++)
+        {
+            array[start] = tmp3[i];
+            start++;
+        }
+       
+    
       
-        
-    
-        merged_size =  parts.p3.lower_size + parts.p3.higher_size;
-        i = 0;
-        for(i; i < parts.p3.lower_size ; i++)
-        {
-            result[i] = parts.p3.lower_part[i];
-        }
-        for(int j = 0; j <  parts.p3.higher_size; j++ )
-        {
-            result[i] = parts.p3.higher_part[j];
-            i++;
-        }
-       
-        printArray(result, merged_size);
-        printf("\n");
-        copyArray(result,arg3.array,merged_size,0);
-        arg3.size = merged_size;
-        quicksort(0,arg3.size -1, arg3.array);
-    
-   
-    
-    printf("\n+++++++++++++++++++++++++++++++++++++++\n");
-    printArray(arg0.array, arg0.size);
-    printf("\n");
-    printArray(arg1.array, arg1.size);
-    printf("\n");
-    printArray(arg2.array, arg2.size);
-    printf("\n");
-    printArray(arg3.array, arg3.size);
-    printf("\n+++++++++++++++++++++++++++++++++++++++++++\n");
-}
-
-void printParts(){
-     printf("array lower p0: ");
-        printArray(parts.p0.lower_part, parts.p0.lower_size);
-        printf("\n"); 
-
-        printf("array higher p0: ");
-        printArray(parts.p0.higher_part, parts.p0.higher_size);
-        printf("\n"); 
-
-        printf("array lower p1: ");
-        printArray(parts.p1.lower_part, parts.p1.lower_size);
-        printf("\n"); 
-
-        printf("array higher p1: ");
-        printArray(parts.p1.higher_part, parts.p1.higher_size);
-        printf("\n");
-
-        printf("array lower p2: ");
-        printArray(parts.p2.lower_part, parts.p2.lower_size);
-        printf("\n"); 
-
-        printf("array higher p2: ");
-        printArray(parts.p2.higher_part, parts.p2.higher_size);
-        printf("\n");
-
-        printf("array lower p3: ");
-        printArray(parts.p3.lower_part, parts.p3.lower_size);
-        printf("\n"); 
-
-        printf("array higher p3: ");
-        printArray(parts.p3.higher_part, parts.p3.higher_size);
-        printf("\n");
-}
-
-void switchParts (int proces_id){
-    // prepisat na pracovanie s pointermi
-   if(step == 1)
-   {
-       if(proces_id == 2)
-       {
-            printf("switching parts...\n");
-            int tmp [MAXSIZE];
-            int tmp_size =  copyArray(parts.p0.higher_part, tmp, parts.p0.higher_size, 0);
-            printf("tmp array: ");
-            printArray(tmp, tmp_size);
-            printf("\n");
-            parts.p0.higher_size = copyArray(parts.p2.lower_part, parts.p0.higher_part, parts.p2.lower_size, 0);
-            printf("p0 higher array: ");
-            printArray(parts.p0.higher_part, parts.p0.higher_size);
-            printf("\n");
-            parts.p2.lower_size = copyArray(tmp, parts.p2.lower_part, tmp_size, 0);
-       } else if (proces_id == 3)
-       {
-           printf("switching parts...\n");
-            int tmp [MAXSIZE];
-            int tmp_size =  copyArray(parts.p1.higher_part, tmp, parts.p1.higher_size, 0);
-            printf("tmp array: ");
-            printArray(tmp, tmp_size);
-            printf("\n");
-            parts.p1.higher_size = copyArray(parts.p3.lower_part, parts.p1.higher_part, parts.p3.lower_size, 0);
-            printf("p0 higher array: ");
-            printArray(parts.p1.higher_part, parts.p1.higher_size);
-            printf("\n");
-            parts.p3.lower_size = copyArray(tmp, parts.p3.lower_part, tmp_size, 0);
-       }
-       
-
-   }else
-   {
-        if(proces_id == 1)
-       {
-            printf("switching parts...\n");
-            int tmp [MAXSIZE];
-            int tmp_size =  copyArray(parts.p0.higher_part, tmp, parts.p0.higher_size, 0);
-            printf("tmp array: ");
-            printArray(tmp, tmp_size);
-            printf("\n");
-            parts.p0.higher_size = copyArray(parts.p1.lower_part, parts.p0.higher_part, parts.p1.lower_size, 0);
-            printf("p0 higher array: ");
-            printArray(parts.p0.higher_part, parts.p0.higher_size);
-            printf("\n");
-            parts.p1.lower_size = copyArray(tmp, parts.p1.lower_part, tmp_size, 0);
-       } else if (proces_id == 3)
-       {
-           printf("switching parts...\n");
-            int tmp [MAXSIZE];
-            int tmp_size =  copyArray(parts.p2.higher_part, tmp, parts.p2.higher_size, 0);
-            printf("tmp array: ");
-            printArray(tmp, tmp_size);
-            printf("\n");
-            parts.p2.higher_size = copyArray(parts.p3.lower_part, parts.p2.higher_part, parts.p3.lower_size, 0);
-            printf("p2 higher array: ");
-            printArray(parts.p2.higher_part, parts.p2.higher_size);
-            printf("\n");
-            parts.p3.lower_size = copyArray(tmp, parts.p3.lower_part, tmp_size, 0);
-       }
-   } 
+    }
 }
 
 struct median_division medianDivision (int* array, int size, int median){
@@ -464,8 +329,8 @@ struct median_division medianDivision (int* array, int size, int median){
     if(array[0] > median)
     {
         result.higher_size = size;
-        copyArray(array, result.higher_part, size, 0);
-        copyArray(array, result.lower_part, -1, 0);
+        result.higher_part = array;
+        result.lower_part = NULL;
         result.lower_size = 0;
         return result;
 
@@ -480,21 +345,32 @@ struct median_division medianDivision (int* array, int size, int median){
         }
     }
     // printf("higher index %i\n", higher_index);
-    result.lower_size = copyArray(array, result.lower_part, higher_index, 0);
-    result.higher_size = copyArray(array, result.higher_part,size, higher_index);
-    return result;
-}
-
-struct arrays divideArray(int* array, int size){
-    struct arrays result;
-    int part_size = size /4;
-    result.p0_size = copyArray(array, result.p0_array, part_size, 0);
-    result.p1_size =copyArray(array, result.p1_array, part_size * 2, part_size);
-    result.p2_size =copyArray(array, result.p2_array, part_size * 3, part_size * 2);
-    result.p3_size =copyArray(array, result.p3_array, size , part_size * 3);
+    result.higher_part = &array[higher_index];
+    result.higher_size = size - higher_index;
+    result.lower_part = &array[0];
+    result.lower_size = higher_index;
     
     return result;
+}
+struct arguments divideArray(int* array, int size){
+    struct arguments result;
+    int part_size = size /4;
+    //vyriesit problem pri poliach ktorych velkost nie je delitelna 4
+    result.p0.array = &array[0];
+    result.p0.size = part_size;
+    result.p0.proces_id = 0;
+    result.p1.array = &array[part_size];
+    result.p1.size = part_size;
+    result.p1.proces_id = 1;
+    result.p2.array = &array[part_size * 2];
+    result.p2.size = part_size;
+    result.p2.proces_id = 2;
+    result.p3.array = &array[part_size * 3];
+    result.p3.size = size - 3 * part_size;
+    result.p3.proces_id = 3;
 
+    return result;
+    
 }
 
 int copyArray(int* source_array, int* destination_array, int size, int start){
