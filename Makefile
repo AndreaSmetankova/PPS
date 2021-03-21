@@ -15,6 +15,3 @@ hyperQuickSort.o: hyperQuickSort.c quickSort.h hyperQuickSort.h
 
 quickSort.o: quickSort.c quickSort.h
 	$(CC) $(CFLAGS) -c quickSort.c  -o quickSort.o
-
-clean: 
-	rm -rf $(OUTPUT) *.o

@@ -32,12 +32,22 @@ struct changable_parts{
     struct median_division p3;
 };
 
+struct can_switch {
+    int p0;
+    int p1;
+    int p2;
+    int p3; 
+};
+
+
+
 void parallelQuickSort(int* array, int size);
 struct arguments divideArray(int* array, int size);
 void hyperQuickSort(void* arguments);
 struct median_division medianDivision (int* array, int size, int median);
-void switchParts(struct arguments* args, int * arrray, int size);
+void switchPartsParallel(struct arguments* args);
 int copyArray(int* source_array, int* destination_array, int size, int start);
+void merge(int* final_array, int size);
 
 
 
