@@ -1,31 +1,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-// #include <unistd.h>
 #include <time.h> 
 #include "quickSort.h"
-#include "hyperQuickSort.h"
-void generateNumFile(int size,char* file);
+#include "quickSort_p_2.h"
+#include "quickSort_p_4.h"
+#include "quickSort_p_8.h"
+#include "functions.h"
 void generateNumArray(int size, int* array);
 
 
 int main(int argc, const char* argv[]) {
 
-    // int array[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
-    // int size = sizeof(array) / sizeof(array[0]);
-    // int array2[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
+    int array[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
+    int array2[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
+    int array3[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
+    int array4[] = {75,91,15,64,21,8,88,54,50,12,47,72,65,54,66,22,83,66,67,0,70,98,99,82,20,40,89,47,19,61,86,85};
+    int size = sizeof(array) / sizeof(array[0]);
     // int size2 = sizeof(array2) / sizeof(array2[0]);
     // generateNumFile(1000,"numbers.txt");
-    int size = 10000;
-    int array[size];
-    int array2[size];
-    generateNumArray(size, array);
-    copyArray(array, array2, size, 0);
+    // int size = 100000;
+    // int array[size];
+    // int array2[size];
+    // generateNumArray(size, array);
+    // copyArray(array, array2, size, 0);
     
 
     printf("-------------------------------------QUICKSORT-------------------------\n");
     printf("Unsorted array: ");
-    // printArray(array,size);
+    printArray(array,size);
     printf("\n");
 
     clock_t t; 
@@ -38,54 +41,69 @@ int main(int argc, const char* argv[]) {
 
 
     printf("Sorted array: ");
-    // printArray(array,size);
+    printArray(array,size);
     printf("\n");
     printf("-------------------------------------QUICKSORT-------------------------\n");
 
-    printf("-------------------------------------PARALLEL QUICKSORT-------------------------\n");
+
+    printf("\n-------------------------------------PARALLEL 2 threads QUICKSORT-------------------------\n");
     printf("Unsorted array: ");
-    // printArray(array2,size);
+    printArray(array2,size);
     printf("\n");
 
     clock_t t2; 
     t2 = clock();
-    parallelQuickSort(array2,size);
+    parallelQuickSort_2threads(array2,size);
     t2 = clock() - t2; 
     double time_taken2 = ((double)t2)/CLOCKS_PER_SEC; // in seconds 
   
-    printf("parallelQuickSort() took %f seconds to execute \n", time_taken2);
+    printf("parallelQuickSort() with 2 threads took %f seconds to execute \n", time_taken2);
 
     printf("Sorted array: ");
-    // printArray(array2,size);
+    printArray(array2,size);
     printf("\n");
-    printf("-------------------------------------PARALLEL QUICKSORT-------------------------\n");
+    printf("-------------------------------------PARALLEL 2 threads QUICKSORT-------------------------\n");
+
+    printf("\n-------------------------------------PARALLEL 4 threads QUICKSORT-------------------------\n");
+    printf("Unsorted array: ");
+    printArray(array3,size);
+    printf("\n");
+
+    clock_t t3; 
+    t3 = clock();
+    parallelQuickSort_4threads(array3,size);
+    t3 = clock() - t3; 
+    double time_taken3 = ((double)t3)/CLOCKS_PER_SEC; // in seconds 
+  
+    printf("parallelQuickSort() with 4 threads took %f seconds to execute \n", time_taken3);
+
+    printf("Sorted array: ");
+    printArray(array3,size);
+    printf("\n");
+    printf("-------------------------------------PARALLEL 4 threads QUICKSORT-------------------------\n");
+
+    printf("\n-------------------------------------PARALLEL 8 threads QUICKSORT-------------------------\n");
+    printf("Unsorted array: ");
+    printArray(array4,size);
+    printf("\n");
+
+    clock_t t4; 
+    t4 = clock();
+    parallelQuickSort_8threads(array4,size);
+    t4 = clock() - t4; 
+    double time_taken4 = ((double)t4)/CLOCKS_PER_SEC; // in seconds 
+  
+    printf("parallelQuickSort() with 8 threads took %f seconds to execute \n", time_taken4);
+
+    printf("Sorted array: ");
+    printArray(array4,size);
+    printf("\n");
+    printf("-------------------------------------PARALLEL 8 threads QUICKSORT-------------------------\n");
 
     return 0;
     
 }
 
-void generateNumFile(int size,char* file){
-    
-    FILE* fp;
-    fp = fopen(file, "w+");
-
-    srand(time(0));
- 
-    for(int i = 0; i < size; i++)
-    {
-        if(i == (size - 1))
-        {
-            fprintf(fp,"%d",rand() ); 
-        } else
-        {
-            fprintf(fp,"%d,",rand());
-        }
-        
-    }
-        
-    fclose(fp);
-
-}
 
 void generateNumArray(int size,int* result){
     srand(time(0));
